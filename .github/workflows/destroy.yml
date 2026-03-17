@@ -1,0 +1,87 @@
+name: Destroy Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "destroy" to confirm'
+        required: true
+        default: ''
+
+env:
+  AWS_REGION: eu-central-1
+
+jobs:
+  destroy:
+    runs-on: ubuntu-latest
+    environment: dev
+    if: github.event.inputs.confirm == 'destroy'
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.0
+      
+      - name: Create terraform.tfvars files
+        run: |
+          echo 'admin_ip = "${{ secrets.ADMIN_IP }}"' > v1/dev/vpc/terraform.tfvars
+          echo 'db_password = "${{ secrets.DB_PASSWORD }}"' >> v1/dev/vpc/terraform.tfvars
+          
+          echo 'db_password = "${{ secrets.DB_PASSWORD }}"' > v1/dev/database/terraform.tfvars
+          echo 'admin_ip = "${{ secrets.ADMIN_IP }}"' >> v1/dev/database/terraform.tfvars
+          
+          echo 'admin_ip = "${{ secrets.ADMIN_IP }}"' > v1/dev/auto_scaling/terraform.tfvars
+          echo 'db_password = "${{ secrets.DB_PASSWORD }}"' >> v1/dev/auto_scaling/terraform.tfvars
+          
+          echo 'alert_email = "${{ secrets.ALERT_EMAIL }}"' > v1/dev/monitoring/terraform.tfvars
+      
+      - name: Destroy Monitoring
+        run: |
+          cd v1/dev/monitoring
+          terraform init
+          terraform destroy -auto-approve || true
+      
+      - name: Destroy Auto Scaling
+        run: |
+          cd v1/dev/auto_scaling
+          terraform init
+          terraform destroy -auto-approve || true
+      
+      - name: Destroy Load Balancer
+        run: |
+          cd v1/dev/load_balancer
+          terraform init
+          terraform destroy -auto-approve || true
+      
+      - name: Destroy NAT Gateway
+        run: |
+          cd v1/dev/nat_gateway
+          terraform init
+          terraform destroy -auto-approve || true
+      
+      - name: Destroy Database
+        run: |
+          cd v1/dev/database
+          terraform init
+          terraform destroy -auto-approve || true
+      
+      - name: Destroy VPC
+        run: |
+          cd v1/dev/vpc
+          terraform init
+          terraform destroy -auto-approve || true
+      
+      - name: Summary
+        run: |
+          echo "## Infrastructure Destroyed! 💥" >> $GITHUB_STEP_SUMMARY
+          echo "All AWS resources have been removed to avoid charges." >> $GITHUB_STEP_SUMMARY

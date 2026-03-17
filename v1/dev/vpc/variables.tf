@@ -26,8 +26,23 @@ variable "ssh_port" {
   type        = number
   default     = 22
 }
-variable "allowed_cidr" {
-  description = "CIDR block allowed to access Grafana and SSH"
+variable "admin_ip" {
+  description = "Your IP address for SSH and Grafana access (e.g., 203.0.113.0/32)"
   type        = string
-  default     = "0.0.0.0/0"
+  default     = "0.0.0.0/0"  # Default allows all - CHANGE THIS for production!
+  validation {
+    condition     = can(regex("^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}/\\d{1,2}$", var.admin_ip))
+    error_message = "admin_ip must be a valid CIDR block (e.g., 203.0.113.0/32)"
+  }
+}
+variable "db_username" {
+  description = "Database username"
+  type        = string
+  default     = "admin"
+}
+variable "db_password" {
+  description = "Database password"
+  type        = string
+  sensitive   = true
+  default     = "ADMIN123"  # Default for testing - change in production
 }

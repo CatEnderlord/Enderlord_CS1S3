@@ -1,0 +1,9 @@
+# Copy this file to terraform.tfvars and fill in your values
+# DO NOT commit terraform.tfvars to git - it contains sensitive data
+
+# Your IP address for SSH access
+# Format: xxx.xxx.xxx.xxx/32 (for single IP)
+admin_ip = "203.0.113.0/32"
+
+# Database password
+# db_password = "YourSecurePassword123!"

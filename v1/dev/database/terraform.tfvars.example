@@ -1,0 +1,8 @@
+# Copy this file to terraform.tfvars and fill in your values
+# DO NOT commit terraform.tfvars to git - it contains sensitive data
+
+# Your IP address for direct RDS access
+# admin_ip = "YOUR.IP.ADDRESS/32"
+
+# Database password - will be prompted if not provided
+# db_password = "YourSecurePassword123!"

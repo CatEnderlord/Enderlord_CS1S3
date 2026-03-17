@@ -1,0 +1,93 @@
+name: Deploy to Dev
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'v1/dev/**/*.tf'
+      - '.github/workflows/deploy-dev.yml'
+  workflow_dispatch:
+
+env:
+  AWS_REGION: eu-central-1
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: dev
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.0
+      
+      - name: Create terraform.tfvars files
+        run: |
+          echo 'admin_ip = "${{ secrets.ADMIN_IP }}"' > v1/dev/vpc/terraform.tfvars
+          echo 'db_password = "${{ secrets.DB_PASSWORD }}"' >> v1/dev/vpc/terraform.tfvars
+          
+          echo 'db_password = "${{ secrets.DB_PASSWORD }}"' > v1/dev/database/terraform.tfvars
+          echo 'admin_ip = "${{ secrets.ADMIN_IP }}"' >> v1/dev/database/terraform.tfvars
+          
+          echo 'admin_ip = "${{ secrets.ADMIN_IP }}"' > v1/dev/auto_scaling/terraform.tfvars
+          echo 'db_password = "${{ secrets.DB_PASSWORD }}"' >> v1/dev/auto_scaling/terraform.tfvars
+          
+          echo 'alert_email = "${{ secrets.ALERT_EMAIL }}"' > v1/dev/monitoring/terraform.tfvars
+      
+      - name: Deploy VPC
+        run: |
+          cd v1/dev/vpc
+          terraform init
+          terraform apply -auto-approve
+      
+      - name: Deploy Database
+        run: |
+          cd v1/dev/database
+          terraform init
+          terraform apply -auto-approve
+      
+      - name: Deploy NAT Gateway
+        run: |
+          cd v1/dev/nat_gateway
+          terraform init
+          terraform apply -auto-approve
+      
+      - name: Deploy Load Balancer
+        run: |
+          cd v1/dev/load_balancer
+          terraform init
+          terraform apply -auto-approve
+      
+      - name: Deploy Auto Scaling
+        run: |
+          cd v1/dev/auto_scaling
+          terraform init
+          terraform apply -auto-approve
+      
+      - name: Deploy Monitoring
+        run: |
+          cd v1/dev/monitoring
+          terraform init
+          terraform apply -auto-approve
+      
+      - name: Get Outputs
+        run: |
+          echo "## Deployment Complete! 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Access URLs:" >> $GITHUB_STEP_SUMMARY
+          cd v1/dev/load_balancer
+          echo "- **Application URL:** $(terraform output -raw alb_url)" >> $GITHUB_STEP_SUMMARY
+          cd ../vpc
+          echo "- **Bastion IP:** $(terraform output -raw bastion_public_ip)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Grafana IP:** $(terraform output -raw grafana_private_ip)" >> $GITHUB_STEP_SUMMARY

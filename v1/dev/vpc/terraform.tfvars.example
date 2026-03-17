@@ -1,0 +1,10 @@
+# Copy this file to terraform.tfvars and fill in your values
+# DO NOT commit terraform.tfvars to git - it contains sensitive data
+
+# Your IP address for SSH and Grafana access
+# Get your IP from: https://www.whatismyipaddress.com/
+# Format: xxx.xxx.xxx.xxx/32 (for single IP)
+admin_ip = "203.0.113.0/32"
+
+# Database password - will be prompted if not provided
+# db_password = "YourSecurePassword123!"
